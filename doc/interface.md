@@ -24,7 +24,7 @@ edges.
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ Mihomo  Subscription                       Via proxy: On  Startup: Off   [—] │
+│ Mihomo  Subscription  About                Via proxy: On  Startup: Off   [—] │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -32,6 +32,7 @@ edges.
 |---|---|---|
 | `Mihomo` menu | x = 8, w = 72 | No dropdown arrow |
 | `Subscription` menu | x = 84, w = 100 | No dropdown arrow |
+| `About` button | x = 188, w = 60 | Opens the About dialog; no dropdown arrow |
 | `Via proxy` chip | right of centre | 104 wide, on/off/unavailable |
 | `Startup` chip | right of Via proxy | 104 wide, on/off |
 | Minimize | right edge, 36 wide | Whole bar height; hides to tray |
@@ -127,7 +128,8 @@ Popup width 220, item height 26, separator 9. Surface `#282828`, 1 px
 - Open config file
 - Open data folder
 
-Disabled items use secondary colour and have no hover state.
+`About` is a direct title-bar button rather than a popup: it opens the About
+dialog. Disabled items use secondary colour and have no hover state.
 
 ## Dialogs
 
@@ -140,6 +142,7 @@ border, 5 px radius, shadow.
 | Import subscription file | 300 | file name, optional URL field, replace warning, Cancel/Import |
 | Replace current subscription? | 218 | warning, Cancel/Replace |
 | mihomo update | 320 | current/latest/asset, update note, Close/Update now |
+| About | 300 | version, project homepage, Open project page/Close |
 | Error | 300 | wrapped error text, OK |
 
 Inputs use a `#212121` surface, `#3C3C3C` border, accent focus border, 4 px
@@ -147,7 +150,8 @@ radius and 12 px text.
 
 ## Tray
 
-- Single left click: native tray menu (`Show`, `Exit`).
+- Single left or right click: native tray menu (`Show`, `Exit`). Right click
+  opens it immediately; the left click waits for the double-click interval.
 - Double-click: restore the main window.
 - The tray menu is provided by EUI's Windows tray backend; imclash subclasses
   its message window to add the double-click and delay the single-click menu.

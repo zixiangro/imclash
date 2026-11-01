@@ -155,14 +155,14 @@ The main area lists the proxy nodes returned by mihomo's `/proxies` API.
 - A normal launch centers the window on the primary monitor work area.
 - `--autostart` runs silently in the tray: the window is parked off-screen
   during startup and hidden before it can appear.
-- The title bar contains `Mihomo`, `Subscription`, `Via proxy`, `Startup` and a
-  single minimize control. `Mihomo` is left of `Subscription`; the toggles are
-  on the right. Menu buttons have no dropdown arrows.
+- The title bar contains `Mihomo`, `Subscription`, `About`, `Via proxy`,
+  `Startup` and a single minimize control. The first three are on the left;
+  the toggles are on the right. Menu buttons have no dropdown arrows.
 - There is no maximize or close control. Maximize is disabled.
 - Minimize hides the window to the tray. The window is excluded from the
   taskbar and Alt+Tab.
-- A left click on the tray icon opens the tray menu (`Show`, `Exit`). A tray
-  double-click restores the main window.
+- A left or right click on the tray icon opens the tray menu (`Show`, `Exit`).
+  A tray double-click restores the main window.
 - The tray menu's `Exit` quits imclash and leaves the mihomo process running.
 - `Startup` writes or removes the current executable from
   `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` with `--autostart`.
@@ -170,10 +170,14 @@ The main area lists the proxy nodes returned by mihomo's `/proxies` API.
   the window when they restore it.
 - Launching a second copy restores the existing window and exits the new
   process.
+- `About` opens a dialog with the compiled version, the project homepage and a
+  button that opens the homepage in the default browser.
 
 ## Input policy
 
-- All UI actions are left clicks.
-- There are no context menus, global keyboard shortcuts or drag-to-reorder
-  operations. Text input fields still use normal keyboard editing.
+- In-window actions are left clicks.
+- The tray menu is the only secondary-click action: right-clicking the tray
+  icon opens it immediately. There are no other context menus, global keyboard
+  shortcuts or drag-to-reorder operations. Text input fields still use normal
+  keyboard editing.
 - The title bar can be dragged to move the window; the window edges resize it.

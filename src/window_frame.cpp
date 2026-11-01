@@ -86,8 +86,9 @@ LRESULT CALLBACK trayProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             return 0;
         }
         if (lParam == WM_RBUTTONUP) {
-            // The application is left-click only.
-            return 0;
+            // Right click opens the native tray menu immediately; cancel a
+            // pending left-click menu timer so it cannot open twice.
+            KillTimer(hwnd, kTrayMenuTimer);
         }
     } else if (message == WM_TIMER && wParam == kTrayMenuTimer) {
         KillTimer(hwnd, kTrayMenuTimer);

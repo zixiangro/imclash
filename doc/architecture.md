@@ -133,7 +133,8 @@ window:
 - Timer fires: pass the original left-up to EUI, which opens `Show`/`Exit`.
 - `WM_LBUTTONDBLCLK`: cancel the timer and send the `Show` menu command
   (`WM_COMMAND` id 1000) to the tray window.
-- `WM_RBUTTONUP`: ignored, keeping the left-click-only policy.
+- `WM_RBUTTONUP`: cancels a pending left-click timer and passes the event to
+  EUI, which opens `Show`/`Exit` immediately.
 
 The minimize control posts `WM_CLOSE`; EUI's close callback hides the window to
 the tray and pauses the render loop.

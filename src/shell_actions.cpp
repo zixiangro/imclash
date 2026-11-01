@@ -87,6 +87,15 @@ bool openFolder(const std::string& path) {
 #endif
 }
 
+bool openUrl(const std::string& url) {
+#if defined(_WIN32)
+    return invokeVerb(url, L"open", SEE_MASK_FLAG_NO_UI);
+#else
+    (void)url;
+    return false;
+#endif
+}
+
 bool openInEditor(const std::string& path) {
 #if defined(_WIN32)
     if (invokeVerb(path, L"edit", SEE_MASK_FLAG_NO_UI)) return true;

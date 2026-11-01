@@ -14,8 +14,7 @@ stable release and will be tagged; preview builds are not tagged.
 
 The application is a **single file**: `imclash.exe`. The window icon and
 version resource are embedded; no assets folder is read at startup and no app
-settings file is created. The icon source is `res/Clash_Logo.png`; the compiled
-resource uses the generated multi-size `res/imclash.ico`.
+settings file is created. The embedded multi-size icon is `res/imclash.ico`.
 
 | Item | Ships? | Why |
 |---|---|---|

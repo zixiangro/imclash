@@ -30,7 +30,7 @@ add_subdirectory(3rd/EUI-NEO)
 set_property(GLOBAL PROPERTY EUI_NEO_APP_ASSETS_DIR "")
 set_property(GLOBAL PROPERTY EUI_NEO_APP_ICON_RESOURCE "")
 
-# res/imclash.ico is generated from res/Clash_Logo.png for the RC compiler.
+# res/imclash.ico supplies the embedded window and tray icon.
 set(IMCLASH_ICON "${CMAKE_CURRENT_SOURCE_DIR}/res/imclash.ico")
 configure_file(res/imclash.rc.in
                "${CMAKE_CURRENT_BINARY_DIR}/generated/imclash.rc" @ONLY)
@@ -54,7 +54,12 @@ target_include_directories(imclash PRIVATE
     src
     3rd/EUI-NEO/3rd/yyjson-0.12.0/src
 )
-target_compile_definitions(imclash PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+target_compile_definitions(imclash PRIVATE
+    NOMINMAX
+    WIN32_LEAN_AND_MEAN
+    IMCLASH_VERSION="${PROJECT_VERSION}"
+    IMCLASH_HOMEPAGE="https://github.com/zixiangro/imclash"
+)
 target_link_libraries(imclash PRIVATE
     winhttp
     dwmapi

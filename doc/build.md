@@ -70,7 +70,7 @@ window is parked off-screen and hidden before it can appear.
 CMakeLists.txt          project, EUI-NEO integration, install rules
 src/                    application sources
 tests/                  logic tests
-res/                    Clash_Logo.png source, generated imclash.ico and version resource
+res/                    embedded imclash.ico and version resource template
 doc/                    descriptive documentation
 3rd/EUI-NEO/            EUI-NEO submodule
 3rd/THIRD-PARTY-NOTICES.md

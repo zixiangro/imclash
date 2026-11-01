@@ -37,7 +37,7 @@ in `%TEMP%\imclash`.
 CMakeLists.txt     project definition and EUI-NEO integration
 src/               application sources
 tests/tests.cpp    logic tests (no window)
-res/               Clash_Logo.png source, generated imclash.ico and version resource
+res/               embedded imclash.ico and version resource template
 doc/               descriptive documentation
 3rd/EUI-NEO/       dependency, a pinned git submodule
 3rd/THIRD-PARTY-NOTICES.md
@@ -133,8 +133,8 @@ completion callback on the UI thread.
 
 ## UI rules
 
-- Borderless 36 px title bar. Left: `Mihomo`, then `Subscription` (no dropdown
-  arrows). Right: `Via proxy`, `Startup`, then the only window control:
+- Borderless 36 px title bar. Left: `Mihomo`, `Subscription`, `About` (no
+  dropdown arrows). Right: `Via proxy`, `Startup`, then the only window control:
   minimize.
 - A normal launch centers the window on the primary monitor work area.
   `--autostart` parks it off-screen during startup and hides it to the tray
@@ -143,10 +143,14 @@ completion callback on the UI thread.
   assets are shipped or read.
 - There is no maximize or close button. The window is excluded from the taskbar
   (`WS_EX_TOOLWINDOW`); minimizing hides it to the tray. Tray `Show`, a tray
-  double-click and a second app launch all restore it. The tray menu itself is
-  opened with a left click.
-- All actions are left clicks. Do not add context menus, global shortcuts, or
-  drag-to-reorder behavior. Text inputs still use the keyboard.
+  double-click and a second app launch all restore it. The tray menu opens with
+  a left or right click; right click opens it immediately.
+- In-window actions are left clicks. The tray menu is the only secondary-button
+  action; do not add other context menus, global shortcuts, or drag-to-reorder
+  behavior. Text inputs still use the keyboard.
+- `About` opens a dialog with `IMCLASH_VERSION` (set from the CMake project
+  version) and the project homepage (`IMCLASH_HOMEPAGE`), plus a button that
+  opens the homepage in the default browser.
 - The main area shows the current subscription and a node list. Nodes are tested
   through mihomo's `/delay` API; `Default` follows config order and `Fastest`
   sorts by measured delay. The per-row `Test` action tests one node. Clicking a

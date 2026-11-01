@@ -27,9 +27,11 @@ is started again automatically.
   the main group and its current selection are shown above the list. A per-row
   `Test` action keeps single-node latency tests separate from switching.
 - Optional startup entry; window minimizes to the tray and is kept out of the
-  taskbar. Tray double-click restores the window.
-- Every action is a left click. There are no context menus, global shortcuts or
-  drag operations.
+  taskbar. Tray double-click restores the window; the tray menu opens with a
+  left or right click.
+- `About` shows the version and links to the project homepage.
+- In-window actions are left clicks; there are no other context menus, global
+  shortcuts or drag operations.
 
 ## Data layout
 
@@ -94,6 +96,7 @@ entry. A normal launch centers the window on the primary monitor.
 |---|---|
 | `Mihomo` | Start, Stop, Restart, Check for updates, Open core folder (or Download mihomo) |
 | `Subscription` | Add from URL..., Import file..., Update now, Open config file, Open data folder |
+| `About` | Version and project homepage |
 
 `Via proxy` chooses between direct downloads and mihomo's local mixed-port.
 `Startup` toggles the Windows startup entry. The only window control is

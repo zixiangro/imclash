@@ -34,6 +34,13 @@
 #include <windows.h>
 #endif
 
+#ifndef IMCLASH_VERSION
+#define IMCLASH_VERSION "0.1.0"
+#endif
+#ifndef IMCLASH_HOMEPAGE
+#define IMCLASH_HOMEPAGE "https://github.com/zixiangro/imclash"
+#endif
+
 namespace app {
 
 using namespace imclash;
@@ -49,6 +56,7 @@ constexpr float kMinimizeWidth = 36.0f;
 constexpr float kMenuButtonHeight = 24.0f;
 constexpr float kMihomoButtonWidth = 72.0f;
 constexpr float kSubscriptionButtonWidth = 100.0f;
+constexpr float kAboutButtonWidth = 60.0f;
 constexpr float kProxyChipWidth = 104.0f;
 constexpr float kStartupChipWidth = 104.0f;
 
@@ -73,6 +81,8 @@ const eui::Color kChipPressed{1.0f, 1.0f, 1.0f, 0.14f};
 const eui::Color kRowHover{1.0f, 1.0f, 1.0f, 0.055f};
 
 constexpr const char* kTestUrl = "https://www.gstatic.com/generate_204";
+constexpr const char* kVersion = IMCLASH_VERSION;
+constexpr const char* kProjectUrl = IMCLASH_HOMEPAGE;
 
 enum class MenuKind {
     None,
@@ -86,6 +96,7 @@ enum class DialogKind {
     ImportFile,
     ConfirmReplace,
     CoreUpdate,
+    About,
     Error,
 };
 
@@ -972,6 +983,10 @@ void openAddUrlDialog() {
     openDialog(DialogKind::AddUrl);
 }
 
+void openAboutDialog() {
+    openDialog(DialogKind::About);
+}
+
 void openImportDialog() {
     AppState& appState = state();
     eui::platform::FileDialogOptions options;
@@ -1342,6 +1357,10 @@ void composeTitleBar(eui::Ui& ui, const eui::Screen& screen) {
                                                   kTitleBarHeight + 2.0f);
                                   }
                               });
+            const float aboutX =
+                subscriptionX + kSubscriptionButtonWidth + 4.0f;
+            composeMenuButton(ui, "titlebar.about", aboutX, kAboutButtonWidth,
+                              "About", false, [] { openAboutDialog(); });
 
             const float minimizeX = screen.width - kMinimizeWidth;
             const float startupX = minimizeX - 8.0f - kStartupChipWidth;
@@ -1864,6 +1883,7 @@ void composeDialog(eui::Ui& ui, const eui::Screen& screen) {
     if (state().dialog == DialogKind::ImportFile) height = 300.0f;
     if (state().dialog == DialogKind::ConfirmReplace) height = 218.0f;
     if (state().dialog == DialogKind::CoreUpdate) height = 320.0f;
+    if (state().dialog == DialogKind::About) height = 300.0f;
     if (state().dialog == DialogKind::Error) height = 300.0f;
     width = std::min(width, screen.width - 32.0f);
     height = std::min(height, screen.height - 32.0f);
@@ -2020,6 +2040,35 @@ void composeDialog(eui::Ui& ui, const eui::Screen& screen) {
                               state().coreCheckValid &&
                                   state().coreCheck.updateAvailable && !state().busy,
                               [] { downloadCore(); });
+        } else if (state().dialog == DialogKind::About) {
+            ui.text("dialog.title").position(innerX, 18.0f)
+                .size(innerW, 24.0f).text("About imclash")
+                .color(kTextPrimary).fontSize(16.0f).build();
+            ui.text("dialog.about.version").position(innerX, 52.0f)
+                .size(innerW, 18.0f)
+                .text(std::string("Version ") + kVersion)
+                .color(kTextSecondary).fontSize(11.0f).build();
+            ui.text("dialog.about.body").position(innerX, 78.0f)
+                .size(innerW, 40.0f)
+                .text("A small Windows tray application for managing one Clash "
+                      "subscription with a local mihomo core.")
+                .color(kTextPrimary).fontSize(11.0f).wrap(true)
+                .lineHeight(16.0f).build();
+            ui.text("dialog.about.project.label").position(innerX, 132.0f)
+                .size(innerW, 16.0f).text("PROJECT HOMEPAGE")
+                .color(kTextSecondary).fontSize(10.0f).build();
+            composeClippedText(ui, "dialog.about.project", innerX, 150.0f,
+                               innerW, 18.0f, kProjectUrl, kAccent, 11.0f);
+            ui.text("dialog.about.license").position(innerX, 182.0f)
+                .size(innerW, 16.0f)
+                .text("Released into the public domain under the Unlicense.")
+                .color(kTextSecondary).fontSize(10.5f).build();
+            composeTextButton(ui, "dialog.about.close", width - 256.0f, buttonsY,
+                              90.0f, 30.0f, "Close", false, true,
+                              [] { closeDialog(); });
+            composeTextButton(ui, "dialog.about.open", width - 160.0f, buttonsY,
+                              136.0f, 30.0f, "Open project page", true, true,
+                              [] { imclash::shell::openUrl(kProjectUrl); });
         } else if (state().dialog == DialogKind::Error) {
             ui.text("dialog.title").position(innerX, 18.0f)
                 .size(innerW, 24.0f).text(state().errorTitle)
@@ -2107,7 +2156,7 @@ void onStart() {
     imclash::shell::setWorkingDirectoryToExecutable();
     initializeAppState();
     imclash::frame::installBorderlessWindow(
-        kTitleBarHeight, 192.0f, 264.0f);
+        kTitleBarHeight, 256.0f, 264.0f);
     imclash::frame::setTickHandler([] { tick(); });
     if (hasAutostartArgument()) {
         imclash::frame::prepareSilentStartup();
