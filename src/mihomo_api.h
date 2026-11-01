@@ -23,8 +23,6 @@ struct Group {
 bool ping(const config::Info& info, std::string& version, std::string& error);
 bool fetchState(const config::Info& info, std::vector<Node>& nodes,
                 std::vector<Group>& groups, std::string& error);
-bool fetchProxies(const config::Info& info, std::vector<Node>& nodes,
-                  std::string& error);
 bool selectNode(const config::Info& info, const std::string& group,
                 const std::string& node, std::string& error);
 bool testDelay(const config::Info& info, const std::string& name,

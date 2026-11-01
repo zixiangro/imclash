@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cwctype>
 #include <filesystem>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -27,25 +28,25 @@ namespace imclash::mihomo_process {
 namespace {
 
 #if defined(_WIN32)
+struct OutputState {
+    std::mutex mutex;
+    std::string text;
+};
+
 HANDLE gProcess = nullptr;
 HANDLE gReadPipe = nullptr;
 std::thread gReader;
-std::mutex gOutputMutex;
-std::string gOutput;
-#endif
+const std::shared_ptr<OutputState> gOutput = std::make_shared<OutputState>();
 
-void appendOutput(const std::string& text) {
-#if defined(_WIN32)
-    std::lock_guard<std::mutex> lock(gOutputMutex);
-    gOutput += text;
+void appendOutput(OutputState& output, const std::string& text) {
+    std::lock_guard<std::mutex> lock(output.mutex);
+    output.text += text;
     constexpr std::size_t kLimit = 8192;
-    if (gOutput.size() > kLimit) {
-        gOutput.erase(0, gOutput.size() - kLimit);
+    if (output.text.size() > kLimit) {
+        output.text.erase(0, output.text.size() - kLimit);
     }
-#else
-    (void)text;
-#endif
 }
+#endif
 
 #if defined(_WIN32)
 Paths discoverPaths() {
@@ -170,14 +171,6 @@ Paths paths() {
     return discovered;
 }
 
-bool coreExists() {
-    return fs::isRegularFile(paths().core);
-}
-
-bool configExists() {
-    return fs::isRegularFile(paths().config);
-}
-
 bool runCapture(const std::string& executable, const std::string& arguments,
                 int timeoutMs, std::string& output) {
     output.clear();
@@ -271,6 +264,7 @@ bool runCapture(const std::string& executable, const std::string& arguments,
     CloseHandle(readEnd);
     CloseHandle(process.hProcess);
     CloseHandle(process.hThread);
+    output = imclash::utf8::fromConsoleCodePage(output);
     return finished && exitCode == 0;
 #else
     (void)executable;
@@ -369,17 +363,18 @@ StartResult start(const config::Info& info) {
     CloseHandle(process.hThread);
 
     {
-        std::lock_guard<std::mutex> lock(gOutputMutex);
-        gOutput.clear();
+        std::lock_guard<std::mutex> lock(gOutput->mutex);
+        gOutput->text.clear();
     }
-    gReader = std::thread([readEnd] {
+    const std::shared_ptr<OutputState> outputState = gOutput;
+    gReader = std::thread([readEnd, outputState] {
         char buffer[4096];
         for (;;) {
             DWORD read = 0;
             if (!ReadFile(readEnd, buffer, sizeof(buffer), &read, nullptr) || read == 0) {
                 break;
             }
-            appendOutput(std::string(buffer, read));
+            appendOutput(*outputState, std::string(buffer, read));
         }
     });
 
@@ -417,7 +412,6 @@ bool stopRunning(std::string& error) {
     if (snapshot == INVALID_HANDLE_VALUE) return true;
     PROCESSENTRY32W entry{};
     entry.dwSize = sizeof(entry);
-    bool matched = false;
     if (Process32FirstW(snapshot, &entry) != FALSE) {
         do {
             std::wstring name = entry.szExeFile;
@@ -442,7 +436,6 @@ bool stopRunning(std::string& error) {
                 continue;
             }
 
-            matched = true;
             if (!TerminateProcess(process, 0)) {
                 error = "Cannot stop the running mihomo (error " +
                         std::to_string(static_cast<unsigned long>(GetLastError())) + ").";
@@ -458,26 +451,9 @@ bool stopRunning(std::string& error) {
         } while (Process32NextW(snapshot, &entry) != FALSE);
     }
     CloseHandle(snapshot);
-    (void)matched;
     return error.empty();
 #else
     error = "mihomo is only managed on Windows.";
-    return false;
-#endif
-}
-
-bool running() {
-#if defined(_WIN32)
-    return gProcess != nullptr && WaitForSingleObject(gProcess, 0) == WAIT_TIMEOUT;
-#else
-    return false;
-#endif
-}
-
-bool owned() {
-#if defined(_WIN32)
-    return gProcess != nullptr;
-#else
     return false;
 #endif
 }
@@ -502,10 +478,22 @@ bool poll(std::string& output) {
 
 std::string outputTail() {
 #if defined(_WIN32)
-    std::lock_guard<std::mutex> lock(gOutputMutex);
-    return gOutput;
+    std::string text;
+    {
+        std::lock_guard<std::mutex> lock(gOutput->mutex);
+        text = gOutput->text;
+    }
+    return imclash::utf8::fromConsoleCodePage(text);
 #else
     return {};
+#endif
+}
+
+void detachForExit() {
+#if defined(_WIN32)
+    // The core outlives this process, so its output pipe never reaches EOF.
+    // Detach instead of joining; the OS closes the pipe when the process exits.
+    if (gReader.joinable()) gReader.detach();
 #endif
 }
 

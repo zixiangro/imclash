@@ -43,6 +43,8 @@ constexpr const wchar_t* kValueName = L"imclash";
 
 } // namespace
 
+namespace {
+
 std::string executablePath() {
 #if defined(_WIN32)
     std::vector<wchar_t> buffer(1024);
@@ -66,6 +68,8 @@ std::string executableDirectory() {
     return std::filesystem::u8path(path).parent_path().u8string();
 }
 
+} // namespace
+
 void setWorkingDirectoryToExecutable() {
 #if defined(_WIN32)
     const std::string directory = executableDirectory();
@@ -87,22 +91,6 @@ bool openInEditor(const std::string& path) {
 #if defined(_WIN32)
     if (invokeVerb(path, L"edit", SEE_MASK_FLAG_NO_UI)) return true;
     return invokeVerb(path, L"open", SEE_MASK_FLAG_NO_UI);
-#else
-    (void)path;
-    return false;
-#endif
-}
-
-bool showInExplorer(const std::string& path) {
-#if defined(_WIN32)
-    const std::wstring wide = imclash::utf8::widen(path);
-    if (wide.empty()) return false;
-    std::wstring arguments = L"/select,\"";
-    arguments += wide;
-    arguments += L"\"";
-    const HINSTANCE result = ShellExecuteW(nullptr, L"open", L"explorer.exe",
-                                           arguments.c_str(), nullptr, SW_SHOWNORMAL);
-    return reinterpret_cast<INT_PTR>(result) > 32;
 #else
     (void)path;
     return false;

@@ -13,8 +13,6 @@ struct Paths {
 };
 
 Paths paths();
-bool coreExists();
-bool configExists();
 
 // Runs `mihomo -v` and returns the version token, or an empty string.
 std::string coreVersion();
@@ -33,12 +31,14 @@ void stop();
 // Stops an owned core or a running mihomo whose executable is the managed
 // core path. Used by the automatic core-update replacement sequence.
 bool stopRunning(std::string& error);
-bool running();
-bool owned();
 
 // Closes process handles after an unexpected exit. Returns true once.
 bool poll(std::string& output);
 std::string outputTail();
+
+// Called at application shutdown: the core keeps running, so the output
+// reader is left to the OS instead of trying to join it forever.
+void detachForExit();
 
 // Used for short-lived helper runs (version, config test).
 bool runCapture(const std::string& executable, const std::string& arguments,

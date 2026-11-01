@@ -31,6 +31,5 @@ void scheduleStartupHide();
 void setTickHandler(std::function<void()> handler);
 
 void setTitleBarDragEnabled(bool enabled);
-float dpiScale();
 
 } // namespace imclash::frame

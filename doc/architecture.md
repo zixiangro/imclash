@@ -76,6 +76,9 @@ The first line `# url: ...` is read and written by `config.cpp`;
 
 `async` completion callbacks are delivered on the UI thread. Workers capture
 copies of `config::Info` and return plain values; they never touch `AppState`.
+The mihomo output reader is joined when an owned process is stopped or polled;
+when the application exits while the core keeps running, `detachForExit()`
+leaves the pipe to process teardown so shutdown does not block.
 
 ## Mihomo process
 

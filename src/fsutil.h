@@ -9,22 +9,15 @@ namespace imclash::fs {
 std::string configDirectory();
 std::string tempDirectory();
 std::string join(const std::string& directory, const std::string& name);
-std::string fileName(const std::string& path);
 
 bool readText(const std::string& path, std::string& output, std::string& error);
 bool writeTextAtomic(const std::string& path, const std::string& content,
                      std::string& error);
 bool ensureDirectory(const std::string& path, std::string& error);
-bool exists(const std::string& path);
 bool isRegularFile(const std::string& path);
 std::uint64_t fileSize(const std::string& path);
 std::int64_t modifiedSeconds(const std::string& path);
 bool removeFile(const std::string& path);
 bool removeTree(const std::string& path);
-
-// Windows helper used when replacing a running executable: the target is moved
-// aside first so the new file can take its place.
-bool replaceFile(const std::string& source, const std::string& target,
-                 std::string& error);
 
 } // namespace imclash::fs

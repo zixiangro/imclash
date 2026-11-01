@@ -4,13 +4,9 @@
 #include <cctype>
 #include <cstdio>
 #include <ctime>
-#include <sstream>
 
 namespace imclash::util {
 namespace {
-
-const char* kUnreserved =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
 
 bool isUnreserved(unsigned char ch) {
     return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
@@ -80,8 +76,8 @@ std::vector<std::string> splitLines(const std::string& text) {
             line.push_back(ch);
         }
     }
-    if (!line.empty() && line.back() == '\r') line.pop_back();
-    if (!line.empty() || (!text.empty() && text.back() == '\n')) {
+    if (!line.empty()) {
+        if (line.back() == '\r') line.pop_back();
         lines.push_back(line);
     }
     return lines;

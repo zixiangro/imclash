@@ -197,12 +197,6 @@ bool fetchState(const config::Info& info, std::vector<Node>& nodes,
     return true;
 }
 
-bool fetchProxies(const config::Info& info, std::vector<Node>& nodes,
-                  std::string& error) {
-    std::vector<Group> groups;
-    return fetchState(info, nodes, groups, error);
-}
-
 bool selectNode(const config::Info& info, const std::string& group,
                 const std::string& node, std::string& error) {
     error.clear();

@@ -37,7 +37,7 @@ in `%TEMP%\imclash`.
 CMakeLists.txt     project definition and EUI-NEO integration
 src/               application sources
 tests/tests.cpp    logic tests (no window)
-res/               embedded icon and version resource template
+res/               Clash_Logo.png source, generated imclash.ico and version resource
 doc/               descriptive documentation
 3rd/EUI-NEO/       dependency, a pinned git submodule
 3rd/THIRD-PARTY-NOTICES.md
@@ -49,7 +49,7 @@ doc/notes/         author's working notes, NOT tracked
 
 ## Build and run
 
-Windows 10/11, a C++17 compiler and CMake 3.14+. EUI-NEO is a submodule:
+Windows 10/11, a C++17 compiler and CMake 3.15+. EUI-NEO is a submodule:
 
 ```sh
 git clone --recursive https://github.com/zixiangro/imclash.git
@@ -59,7 +59,7 @@ cmake --build build --parallel
 
 Useful flags are in [doc/build.md](doc/build.md). The result is
 `build/imclash.exe`; no assets folder is produced or needed. The tray icon is
-the icon embedded in the executable.
+embedded, and the MSVC runtime is linked statically.
 
 Tests exercise the non-UI logic:
 
@@ -112,7 +112,8 @@ completion callback on the UI thread.
 - On startup the app first probes the controller (adopting an already running
   instance) and otherwise starts its own core.
 - imclash does not stop mihomo when it exits; the process it started keeps
-  running. Stop and Restart are explicit in-app actions.
+  running. Stop and Restart are explicit in-app actions. The output reader is
+  detached during app shutdown so the still-running core cannot block exit.
 - The app reads `external-controller`, `secret`, `mixed-port` and `port` from
   `config.yaml`. If there is no external controller, it starts mihomo with
   `-ext-ctl 127.0.0.1:9090`.

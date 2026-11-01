@@ -2,7 +2,6 @@
 
 #include "utf8.h"
 
-#include <algorithm>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -23,10 +22,6 @@ namespace imclash::fs {
 namespace {
 
 #if defined(_WIN32)
-std::string wideToUtf8(const std::wstring& text) {
-    return imclash::utf8::narrow(text.c_str());
-}
-
 std::wstring knownFolder(REFKNOWNFOLDERID id) {
     PWSTR path = nullptr;
     if (FAILED(SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, nullptr, &path)) ||
@@ -75,15 +70,12 @@ std::string join(const std::string& directory, const std::string& name) {
     return (std::filesystem::u8path(directory) / std::filesystem::u8path(name)).u8string();
 }
 
-std::string fileName(const std::string& path) {
-    return std::filesystem::u8path(path).filename().u8string();
-}
-
 bool readText(const std::string& path, std::string& output, std::string& error) {
     output.clear();
     error.clear();
     std::error_code sizeError;
-    const std::uintmax_t size = std::filesystem::file_size(std::filesystem::u8path(path), sizeError);
+    const std::uintmax_t size =
+        std::filesystem::file_size(std::filesystem::u8path(path), sizeError);
     if (sizeError) {
         error = "Cannot read file size: " + sizeError.message();
         return false;
@@ -170,11 +162,6 @@ bool ensureDirectory(const std::string& path, std::string& error) {
     return true;
 }
 
-bool exists(const std::string& path) {
-    std::error_code error;
-    return std::filesystem::exists(std::filesystem::u8path(path), error) && !error;
-}
-
 bool isRegularFile(const std::string& path) {
     std::error_code error;
     return std::filesystem::is_regular_file(std::filesystem::u8path(path), error) && !error;
@@ -214,34 +201,6 @@ bool removeTree(const std::string& path) {
     std::error_code error;
     std::filesystem::remove_all(std::filesystem::u8path(path), error);
     return !error;
-}
-
-bool replaceFile(const std::string& source, const std::string& target,
-                 std::string& error) {
-    error.clear();
-#if defined(_WIN32)
-    const std::wstring wideSource = imclash::utf8::widen(source);
-    const std::wstring wideTarget = imclash::utf8::widen(target);
-    if (wideSource.empty() || wideTarget.empty()) {
-        error = "Invalid file path.";
-        return false;
-    }
-    if (!MoveFileExW(wideSource.c_str(), wideTarget.c_str(),
-                     MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-        error = windowsError("Cannot replace file");
-        return false;
-    }
-    return true;
-#else
-    std::error_code renameError;
-    std::filesystem::rename(std::filesystem::u8path(source),
-                            std::filesystem::u8path(target), renameError);
-    if (renameError) {
-        error = renameError.message();
-        return false;
-    }
-    return true;
-#endif
 }
 
 } // namespace imclash::fs

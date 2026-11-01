@@ -14,20 +14,20 @@ stable release and will be tagged; preview builds are not tagged.
 
 The application is a **single file**: `imclash.exe`. The window icon and
 version resource are embedded; no assets folder is read at startup and no app
-settings file is created.
+settings file is created. The icon source is `res/Clash_Logo.png`; the compiled
+resource uses the generated multi-size `res/imclash.ico`.
 
 | Item | Ships? | Why |
 |---|---|---|
-| `imclash.exe` | yes | the application and its linked dependencies |
+| `imclash.exe` | yes | statically linked CRT and dependencies |
 | `assets/` (EUI's fonts, icon, shaders) | no | unused; text uses the system UI font |
 | notices and licence texts | yes | required by the licences below |
 | `mihomo*` | no | the user installs the core separately |
 | system `tar.exe` | no | invoked from Windows only when updating the core |
 
-The executable is one file and needs no app assets, but it links the Microsoft
-Visual C++ runtime dynamically (`MSVCP140.dll`, `VCRUNTIME140*.dll`). Those are
-installed by the Visual C++ 2015-2022 Redistributable and are normally present
-on Windows 10/11; confirm with `dumpbin /dependents imclash.exe`.
+The executable needs no Visual C++ redistributable: the MSVC runtime and all
+EUI-NEO dependencies are linked statically. Confirm with
+`dumpbin /dependents imclash.exe` — only system DLLs should appear.
 
 ## Building a release
 
@@ -89,7 +89,7 @@ row to `3rd/THIRD-PARTY-NOTICES.md` and one `install(FILES ...)` line.
 | Icon | the executable and tray show `res/imclash.ico` |
 | Runs from an empty directory | copy only `imclash.exe` somewhere and start it |
 | Window | normal launch is centered; `--autostart` stays hidden in the tray |
-| Dependencies | `dumpbin /dependents imclash.exe` lists system DLLs plus the VC++ runtime |
+| Dependencies | `dumpbin /dependents imclash.exe` lists system DLLs only |
 
 The subscription and core download paths need a live provider and the user's
 own mihomo installation, so they are checked manually against

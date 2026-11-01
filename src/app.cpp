@@ -19,10 +19,9 @@
 
 #include <algorithm>
 #include <chrono>
-#include <cmath>
-#include <cstdio>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #if defined(_WIN32)
@@ -124,7 +123,6 @@ struct AppState {
 
     bool configPresent = false;
     config::Info configInfo;
-    std::string sourceUrl;
     std::uint64_t configBytes = 0;
     std::int64_t configModified = 0;
 
@@ -139,7 +137,6 @@ struct AppState {
     std::chrono::steady_clock::time_point nextPing{};
     std::chrono::steady_clock::time_point nextConfigCheck{};
     bool pingInFlight = false;
-    bool startupProbeDone = false;
     int pingGeneration = 0;
     int nodesGeneration = 0;
 
@@ -162,7 +159,6 @@ struct AppState {
     bool testingAll = false;
     int testGeneration = 0;
     int testPending = 0;
-    int testDone = 0;
     int testTotal = 0;
     bool sortBySpeed = false;
     float nodeScroll = 0.0f;
@@ -180,7 +176,6 @@ struct AppState {
 
     PendingKind pendingKind = PendingKind::None;
     std::string pendingUrl;
-    std::string pendingPath;
     std::string pendingContent;
     std::string pendingImportUrl;
 
@@ -196,9 +191,6 @@ struct AppState {
     std::string errorTitle;
     std::string errorText;
 
-    float listX = 0.0f;
-    float listY = 0.0f;
-    float listW = 0.0f;
     float listH = 0.0f;
 };
 
@@ -259,9 +251,18 @@ void showError(const std::string& title, const std::string& text) {
 }
 
 void closeDialog() {
-    state().dialog = DialogKind::None;
-    state().dialogError.clear();
-    imclash::frame::setTitleBarDragEnabled(state().menu == MenuKind::None);
+    AppState& appState = state();
+    appState.dialog = DialogKind::None;
+    appState.dialogError.clear();
+    appState.addUrl.clear();
+    appState.importPath.clear();
+    appState.importContent.clear();
+    appState.importUrl.clear();
+    appState.pendingKind = PendingKind::None;
+    appState.pendingUrl.clear();
+    appState.pendingContent.clear();
+    appState.pendingImportUrl.clear();
+    imclash::frame::setTitleBarDragEnabled(appState.menu == MenuKind::None);
     requestUpdate();
 }
 
@@ -383,7 +384,6 @@ void refreshConfigState() {
     AppState& appState = state();
     appState.configInfo = config::read(appState.configPath);
     appState.configPresent = appState.configInfo.present;
-    appState.sourceUrl = appState.configInfo.sourceUrl;
     appState.configBytes = appState.configPresent ? fs::fileSize(appState.configPath) : 0;
     appState.configModified = appState.configPresent ? fs::modifiedSeconds(appState.configPath) : 0;
     updateProxyState();
@@ -645,7 +645,6 @@ void testAllNodes() {
     const int generation = appState.testGeneration;
     appState.testingAll = true;
     appState.testTotal = static_cast<int>(appState.nodes.size());
-    appState.testDone = 0;
     appState.testPending = appState.testTotal;
     const config::Info info = appState.configInfo;
 
@@ -674,7 +673,6 @@ void testAllNodes() {
                     node.delay = result.ok ? result.value : -1;
                     break;
                 }
-                ++appState.testDone;
                 --appState.testPending;
                 if (appState.testPending <= 0) {
                     appState.testingAll = false;
@@ -1006,9 +1004,8 @@ void executePending() {
     AppState& appState = state();
     const PendingKind kind = appState.pendingKind;
     const std::string url = appState.pendingUrl;
-    const std::string content = appState.pendingContent;
+    std::string content = std::move(appState.pendingContent);
     const std::string importUrl = appState.pendingImportUrl;
-    appState.pendingKind = PendingKind::None;
     closeDialog();
     if (kind == PendingKind::UrlDownload) {
         beginDownload(url);
@@ -1017,11 +1014,11 @@ void executePending() {
     }
 }
 
-void requestUrlDownload(const std::string& url) {
+void requestUrlDownload(std::string url) {
     AppState& appState = state();
     if (appState.configPresent) {
         appState.pendingKind = PendingKind::UrlDownload;
-        appState.pendingUrl = url;
+        appState.pendingUrl = std::move(url);
         appState.pendingContent.clear();
         appState.pendingImportUrl.clear();
         openDialog(DialogKind::ConfirmReplace);
@@ -1031,13 +1028,16 @@ void requestUrlDownload(const std::string& url) {
     }
 }
 
-void requestFileImport(const std::string& content, const std::string& url) {
+void requestFileImport(std::string content, std::string url) {
     AppState& appState = state();
     if (appState.configPresent) {
         appState.pendingKind = PendingKind::FileImport;
-        appState.pendingContent = content;
-        appState.pendingImportUrl = url;
+        appState.pendingContent = std::move(content);
+        appState.pendingImportUrl = std::move(url);
         appState.pendingUrl.clear();
+        appState.importPath.clear();
+        appState.importContent.clear();
+        appState.importUrl.clear();
         openDialog(DialogKind::ConfirmReplace);
     } else {
         closeDialog();
@@ -1090,6 +1090,7 @@ void downloadCore() {
     const bool wasRunning = appState.coreRunning;
     const bool configAvailable = appState.configPresent;
     const std::string configDirectory = appState.configDir;
+    const std::string configPath = appState.configPath;
     const std::string proxy = proxyForDownload();
     const std::string url = appState.coreCheck.downloadUrl;
     const std::string latest = appState.coreCheck.latest;
@@ -1106,7 +1107,7 @@ void downloadCore() {
 
     async::restart(
         "imclash.core.download",
-        [url, latest, proxy, configAvailable, configDirectory]()
+        [url, latest, proxy, configAvailable, configDirectory, configPath]()
             -> async::Result<core_update::DownloadResult> {
             core_update::DownloadResult result =
                 core_update::download(url, latest, proxy, {});
@@ -1117,7 +1118,9 @@ void downloadCore() {
                 std::string output;
                 if (!mihomo_process::runCapture(
                         result.executablePath,
-                        "-t -d \"" + configDirectory + "\"", 20000, output)) {
+                        "-t -f \"" + configPath + "\" -d \"" +
+                            configDirectory + "\"",
+                        20000, output)) {
                     fs::removeTree(result.tempDirectory);
                     return async::failure<core_update::DownloadResult>(
                         "The new mihomo rejected the current config.yaml.\n" +
@@ -1129,7 +1132,10 @@ void downloadCore() {
         [wasRunning, updateGeneration](
             const async::Result<core_update::DownloadResult>& result) {
             AppState& appState = state();
-            if (updateGeneration != appState.coreUpdateGeneration) return;
+            if (updateGeneration != appState.coreUpdateGeneration) {
+                if (result.ok) fs::removeTree(result.value.tempDirectory);
+                return;
+            }
             appState.coreUpdateInFlight = false;
             appState.busy = false;
             if (!result.ok) {
@@ -1397,18 +1403,19 @@ void composeSubscriptionCard(eui::Ui& ui, const eui::Screen& screen, float x,
         .size(width - 32.0f, 16.0f).text("CURRENT SUBSCRIPTION")
         .color(kTextSecondary).fontSize(10.0f).build();
 
-    const std::string title = state().sourceUrl.empty()
+    const std::string title = state().configInfo.sourceUrl.empty()
         ? "Local subscription file"
-        : state().sourceUrl;
+        : state().configInfo.sourceUrl;
     composeClippedText(ui, "sub.title", x + 16.0f, y + 34.0f,
                        width - 280.0f, 26.0f, title, kTextPrimary, 15.0f);
 
     const std::string nodeCount = state().nodesLoaded
         ? std::to_string(state().nodes.size()) + " nodes"
         : (state().apiReady ? "nodes loading" : "nodes unavailable");
-    const std::string meta = "Updated " + imclash::util::formatRelativeTime(state().configModified) +
-                             "  ·  " + nodeCount + "  ·  " +
-                             imclash::util::formatBytes(state().configBytes);
+    const std::string meta =
+        "Updated " + imclash::util::formatRelativeTime(state().configModified) +
+        "  ·  " + nodeCount + "  ·  " +
+        imclash::util::formatBytes(state().configBytes);
     ui.text("sub.meta").position(x + 16.0f, y + 62.0f)
         .size(width - 32.0f, 18.0f).text(meta)
         .color(kTextSecondary).fontSize(11.0f).build();
@@ -1419,8 +1426,9 @@ void composeSubscriptionCard(eui::Ui& ui, const eui::Screen& screen, float x,
                       [] { imclash::shell::openInEditor(state().configPath); });
     composeTextButton(ui, "sub.update", x + width - 126.0f, y + 30.0f,
                       110.0f, 30.0f, "Update now", true,
-                      state().configPresent && !state().sourceUrl.empty() && !state().busy,
-                      [] { beginDownload(state().sourceUrl); });
+                      state().configPresent &&
+                          !state().configInfo.sourceUrl.empty() && !state().busy,
+                      [] { beginDownload(state().configInfo.sourceUrl); });
 
     const float statusY = y + 96.0f;
     const eui::Color dot = state().coreRunning
@@ -1478,7 +1486,6 @@ void composeNodeRow(eui::Ui& ui, NodeEntry* node, const std::string& id,
                     float y, float width) {
     const bool current = !state().currentNode.empty() &&
                          state().currentNode == node->name;
-    const bool hoverable = state().apiReady && !state().testingAll && !node->testing;
     const bool canTest = state().apiReady && !state().testingAll && !node->testing;
     const auto scrollList = [](const core::ScrollEvent& event) {
         if (event.y == 0.0) return;
@@ -1495,7 +1502,7 @@ void composeNodeRow(eui::Ui& ui, NodeEntry* node, const std::string& id,
         const eui::Color base = current ? selected : eui::Color{0.0f, 0.0f, 0.0f, 0.0f};
         const eui::Color hover = current
             ? selected
-            : (hoverable ? kRowHover : eui::Color{0.0f, 0.0f, 0.0f, 0.0f});
+            : (canTest ? kRowHover : eui::Color{0.0f, 0.0f, 0.0f, 0.0f});
         ui.rect(id + ".bg").size(width, kRowHeight)
             .color(base).states(base, hover, hover).build();
         ui.rect(id + ".line").position(0.0f, kRowHeight - 1.0f)
@@ -1626,9 +1633,6 @@ void composeNodes(eui::Ui& ui, const eui::Screen& screen, float x, float y,
 
     const float listTop = cardY + 29.0f;
     const float listHeight = std::max(0.0f, cardH - 29.0f);
-    state().listX = x;
-    state().listY = listTop;
-    state().listW = width;
     state().listH = listHeight;
 
     if (!state().apiReady) {
@@ -1780,9 +1784,10 @@ void composeMenu(eui::Ui& ui, const eui::Screen& screen) {
                          [] { openAddUrlDialog(); }});
         items.push_back({"Import file...", !state().busy, false,
                          [] { openImportDialog(); }});
-        items.push_back({"Update now", state().configPresent && !state().sourceUrl.empty() &&
+        items.push_back({"Update now", state().configPresent &&
+                                          !state().configInfo.sourceUrl.empty() &&
                                           !state().busy, false,
-                         [] { beginDownload(state().sourceUrl); }});
+                         [] { beginDownload(state().configInfo.sourceUrl); }});
         items.push_back({"", true, true, {}});
         items.push_back({"Open config file", state().configPresent, false,
                          [] { imclash::shell::openInEditor(state().configPath); }});
@@ -2064,11 +2069,7 @@ void initializeAppState() {
 
 void startupProbe() {
     AppState& appState = state();
-    if (!appState.configPresent) {
-        appState.startupProbeDone = true;
-        return;
-    }
-    appState.startupProbeDone = false;
+    if (!appState.configPresent) return;
     appState.pingInFlight = true;
     const config::Info info = appState.configInfo;
     async::restart(
@@ -2084,7 +2085,6 @@ void startupProbe() {
         [](const async::Result<std::string>& result) {
             AppState& appState = state();
             appState.pingInFlight = false;
-            appState.startupProbeDone = true;
             if (result.ok) {
                 appState.coreRunning = true;
                 appState.coreOwned = false;
@@ -2155,7 +2155,10 @@ const DslAppConfig& dslAppConfig() {
         .tray(true)
         .trayTitle("imclash")
         .trayIcon("imclash.exe")
-        .onStart([] { onStart(); });
+        .onStart([] { onStart(); })
+        // The core is intentionally left running on exit; detach its output
+        // reader instead of letting a joinable std::thread abort shutdown.
+        .onShutdown([] { mihomo_process::detachForExit(); });
     return config;
 }
 

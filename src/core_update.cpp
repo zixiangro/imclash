@@ -7,10 +7,8 @@
 #include "utf8.h"
 
 #include <algorithm>
-#include <cstdio>
 #include <filesystem>
 #include <string>
-#include <vector>
 
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -53,8 +51,12 @@ bool runTool(const std::wstring& executable, const std::wstring& arguments,
         error = "Cannot run " + imclash::utf8::narrow(executable.c_str()) + ".";
         return false;
     }
-    const DWORD wait = WaitForSingleObject(process.hProcess, 60000);
+    DWORD wait = WaitForSingleObject(process.hProcess, 60000);
     DWORD exitCode = 1;
+    if (wait == WAIT_TIMEOUT) {
+        TerminateProcess(process.hProcess, 1);
+        wait = WaitForSingleObject(process.hProcess, 1000);
+    }
     GetExitCodeProcess(process.hProcess, &exitCode);
     CloseHandle(process.hProcess);
     CloseHandle(process.hThread);
@@ -154,8 +156,9 @@ DownloadResult download(const std::string& url, const std::string& version,
         result.error = "Cannot locate the temporary directory.";
         return result;
     }
+    // The release tag is remote input; keep it out of filesystem paths.
     const std::string directory = fs::join(
-        base, "core-" + version + "-" +
+        base, "core-" +
                   std::to_string(static_cast<unsigned long long>(GetTickCount64())));
     std::string error;
     if (!fs::ensureDirectory(directory, error)) {

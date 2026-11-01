@@ -4,7 +4,7 @@
 
 - Windows 10/11.
 - A C++17 compiler.
-- CMake 3.14 or newer.
+- CMake 3.15 or newer.
 - The system `tar.exe` (included with Windows 10/11) for mihomo release
   archives.
 
@@ -35,7 +35,8 @@ cmake --build build --parallel
 ```
 
 The executable is `build/imclash.exe`. It needs no assets folder: the
-window/tray icon is embedded and text uses the system font. An incremental
+window/tray icon is embedded and text uses the system font. The MSVC runtime is
+linked statically, so no Visual C++ redistributable is required. An incremental
 rebuild only needs the second command.
 
 ## Tests
@@ -69,7 +70,7 @@ window is parked off-screen and hidden before it can appear.
 CMakeLists.txt          project, EUI-NEO integration, install rules
 src/                    application sources
 tests/                  logic tests
-res/                    embedded icon and version resource template
+res/                    Clash_Logo.png source, generated imclash.ico and version resource
 doc/                    descriptive documentation
 3rd/EUI-NEO/            EUI-NEO submodule
 3rd/THIRD-PARTY-NOTICES.md

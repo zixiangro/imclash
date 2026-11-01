@@ -175,17 +175,16 @@ std::string labeledCommentUrl(const std::string& content) {
 
 Info parse(const std::string& rawContent) {
     Info info;
-    info.content = stripBom(rawContent);
+    const std::string content = stripBom(rawContent);
     info.present = true;
-    info.sourceUrl = updateUrlFromContent(info.content);
-    if (info.sourceUrl.empty()) info.sourceUrl = labeledCommentUrl(info.content);
-    info.mixedPort = topLevelInt(info.content, "mixed-port");
-    info.httpPort = topLevelInt(info.content, "port");
-    info.socksPort = topLevelInt(info.content, "socks-port");
-    info.externalController = topLevelString(info.content, "external-controller");
-    info.secret = topLevelString(info.content, "secret");
-    info.validClashYaml = looksLikeClashYaml(info.content);
-    info.proxyOrder = proxyOrder(info.content);
+    info.sourceUrl = updateUrlFromContent(content);
+    if (info.sourceUrl.empty()) info.sourceUrl = labeledCommentUrl(content);
+    info.mixedPort = topLevelInt(content, "mixed-port");
+    info.httpPort = topLevelInt(content, "port");
+    info.externalController = topLevelString(content, "external-controller");
+    info.secret = topLevelString(content, "secret");
+    info.validClashYaml = looksLikeClashYaml(content);
+    info.proxyOrder = proxyOrder(content);
 
     std::string controller = info.externalController;
     if (controller.empty()) {
@@ -327,10 +326,6 @@ bool looksLikeClashYaml(const std::string& rawContent) {
         }
     }
     return false;
-}
-
-std::vector<std::string> parseProxyOrder(const std::string& content) {
-    return proxyOrder(stripBom(content));
 }
 
 std::string proxyAddress(const Info& info) {

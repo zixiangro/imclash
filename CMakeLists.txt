@@ -1,8 +1,15 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 project(imclash VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Link the MSVC runtime statically. Set before EUI-NEO's targets are created,
+# and keep GLFW from switching its own objects back to the DLL runtime.
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    set(USE_MSVC_RUNTIME_LIBRARY_DLL OFF CACHE BOOL "" FORCE)
+endif()
 
 option(IMCLASH_BUILD_TESTS "Build the logic tests" ON)
 
@@ -23,8 +30,12 @@ add_subdirectory(3rd/EUI-NEO)
 set_property(GLOBAL PROPERTY EUI_NEO_APP_ASSETS_DIR "")
 set_property(GLOBAL PROPERTY EUI_NEO_APP_ICON_RESOURCE "")
 
+# res/imclash.ico is generated from res/Clash_Logo.png for the RC compiler.
+set(IMCLASH_ICON "${CMAKE_CURRENT_SOURCE_DIR}/res/imclash.ico")
 configure_file(res/imclash.rc.in
                "${CMAKE_CURRENT_BINARY_DIR}/generated/imclash.rc" @ONLY)
+set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/generated/imclash.rc"
+    PROPERTIES OBJECT_DEPENDS "${IMCLASH_ICON}")
 
 add_executable(imclash
     src/app.cpp

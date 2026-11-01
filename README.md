@@ -63,7 +63,7 @@ Temporary downloads go to `%TEMP%\imclash`. The startup toggle is stored in
 
 ## Build
 
-Requires Windows 10/11, CMake 3.14+ and a C++17 compiler. EUI-NEO is a pinned
+Requires Windows 10/11, CMake 3.15+ and a C++17 compiler. EUI-NEO is a pinned
 submodule:
 
 ```sh
@@ -74,7 +74,8 @@ cmake --build build --parallel
 ```
 
 The result is `build/imclash.exe`. No assets folder is produced; the tray icon
-is embedded in the executable.
+is embedded, and the MSVC runtime and EUI-NEO dependencies are linked
+statically, so no Visual C++ redistributable is needed.
 
 ## Run
 
@@ -91,7 +92,7 @@ entry. A normal launch centers the window on the primary monitor.
 
 | Menu | Items |
 |---|---|
-| `Mihomo` | Start, Stop, Restart, Check for updates..., Open core folder; or Download mihomo... when no local core exists |
+| `Mihomo` | Start, Stop, Restart, Check for updates, Open core folder (or Download mihomo) |
 | `Subscription` | Add from URL..., Import file..., Update now, Open config file, Open data folder |
 
 `Via proxy` chooses between direct downloads and mihomo's local mixed-port.

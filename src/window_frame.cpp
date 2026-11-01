@@ -319,13 +319,4 @@ void setTitleBarDragEnabled(bool enabled) {
     gTitleBarDragEnabled = enabled;
 }
 
-float dpiScale() {
-#if defined(_WIN32)
-    HWND hwnd = nativeWindow();
-    return hwnd != nullptr ? scaleFor(hwnd) : 1.0f;
-#else
-    return 1.0f;
-#endif
-}
-
 } // namespace imclash::frame

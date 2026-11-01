@@ -192,14 +192,6 @@ Response finish(PreparedRequest& prepared, const Options& options) {
                         WINHTTP_NO_HEADER_INDEX);
     response.status = static_cast<int>(status);
 
-    wchar_t contentType[256]{};
-    DWORD contentTypeSize = sizeof(contentType);
-    if (WinHttpQueryHeaders(prepared.request.value, WINHTTP_QUERY_CONTENT_TYPE,
-                            WINHTTP_HEADER_NAME_BY_INDEX, contentType,
-                            &contentTypeSize, WINHTTP_NO_HEADER_INDEX)) {
-        response.contentType = imclash::utf8::narrow(contentType);
-    }
-
     DWORD length = 0;
     DWORD lengthSize = sizeof(length);
     if (WinHttpQueryHeaders(prepared.request.value,
@@ -224,6 +216,11 @@ Response finish(PreparedRequest& prepared, const Options& options) {
             return response;
         }
         if (available == 0) break;
+        if (response.body.size() > options.maxBytes ||
+            available > options.maxBytes - response.body.size()) {
+            response.error = "Response is too large.";
+            return response;
+        }
         std::vector<char> buffer(available);
         DWORD read = 0;
         if (!WinHttpReadData(prepared.request.value, buffer.data(), available, &read)) {
@@ -309,6 +306,10 @@ bool downloadToFile(const std::string& url, const std::string& path,
         error = "HTTP " + std::to_string(status);
         return false;
     }
+    if (prepared.contentLength > options.maxBytes) {
+        error = "Download is too large.";
+        return false;
+    }
 
     std::ofstream stream(std::filesystem::u8path(path),
                          std::ios::binary | std::ios::trunc);
@@ -328,6 +329,13 @@ bool downloadToFile(const std::string& url, const std::string& path,
             return false;
         }
         if (available == 0) break;
+        if (received > options.maxBytes ||
+            available > options.maxBytes - received) {
+            error = "Download is too large.";
+            stream.close();
+            fs::removeFile(path);
+            return false;
+        }
         std::vector<char> buffer(available);
         DWORD read = 0;
         if (!WinHttpReadData(prepared.request.value, buffer.data(), available, &read)) {

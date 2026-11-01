@@ -22,7 +22,6 @@ struct Response {
     int status = 0;
     std::string body;
     std::string error;
-    std::string contentType;
 };
 
 Response get(const std::string& url, const Options& options = {});
